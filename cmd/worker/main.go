@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"flag"
 	"log/slog"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"os/signal"
 	"strconv"
@@ -79,7 +79,7 @@ func makeTaskHandler(ctx context.Context, br *broker.Broker, log *slog.Logger, f
 		time.Sleep(delay)
 
 		outcome := "done"
-		if rand.Float64() < failRate {
+		if rand.Float64() < failRate { //nolint:gosec // simulated outcome, not a security decision; crypto/rand would be nonsensical here
 			outcome = "failed"
 		}
 		publishProgress(ctx, br, log, task.ID, outcome)
@@ -111,7 +111,7 @@ func randDelay(minMs, maxMs int) time.Duration {
 	if maxMs <= minMs {
 		return time.Duration(minMs) * time.Millisecond
 	}
-	return time.Duration(minMs+rand.Intn(maxMs-minMs)) * time.Millisecond
+	return time.Duration(minMs+rand.IntN(maxMs-minMs)) * time.Millisecond //nolint:gosec // simulated jitter, not a security decision
 }
 
 func connectWithRetry(ctx context.Context, url string, log *slog.Logger) (*broker.Broker, error) {

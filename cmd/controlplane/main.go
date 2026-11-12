@@ -69,7 +69,7 @@ func main() {
 	}
 	defer consumeCtx.Stop()
 
-	srv := &http.Server{Addr: ":" + port, Handler: api.NewRouter(svc)}
+	srv := &http.Server{Addr: ":" + port, Handler: api.NewRouter(svc), ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		log.Info("control plane listening", "port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
