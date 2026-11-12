@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: controlplane
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  nats:
+    image: nats:2-alpine
+    command: ["-js"]
+    ports:
+      - "4222:4222"
+    volumes:
+      - natsdata:/data
+
+  controlplane:
+    build:
+      context: .
+      target: controlplane
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/controlplane?sslmode=disable
+      NATS_URL: nats://nats:4222
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      NATS_URL: nats://nats:4222
+      FAIL_RATE: "${FAIL_RATE:-0}"
+      MIN_DELAY_MS: "${MIN_DELAY_MS:-200}"
+      MAX_DELAY_MS: "${MAX_DELAY_MS:-1500}"
+    depends_on:
+      - nats
+      - controlplane
+
+volumes:
+  pgdata:
+  natsdata:
